@@ -1,34 +1,27 @@
-﻿using System.Net.Sockets;
+﻿using Core;
 using System.Net;
-using System.Text;
+using System.Net.Sockets;
 
 namespace Server
 {
     internal class server
     {
-        private static IPAddress _address => IPAddress.Parse("127.0.0.1");
-        private static int _port => 1024;
-        static void Main()
+        private static IPAddress _address => IPAddress.Parse(Service.IpStr);
+
+        public static string Riddle = "It can be lost but never can it be found again";
+
+        public static string Answer = "time";
+        static async Task Main()
         {
             Socket server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.IP);
 
-            server.Bind(new IPEndPoint(_address, _port));
+            server.Bind(new IPEndPoint(_address, Service.Port));
 
             server.Listen();
 
-            Socket client;
-
             try
             {
-                while (true)
-                {
-                    client = server.Accept();
-
-                    ShowLog(client);
-
-                    SendMsg(client, "Hello client!!!");
-
-                }
+                await ClientListenerAsync(server);
             }
             catch (Exception ex)
             {
@@ -39,23 +32,40 @@ namespace Server
 
         }
 
-        public static void SendMsg(Socket socket, string msg)
+
+
+
+        public static async Task WorkWithClientAsync(Socket client)
         {
-            socket.Send(Encoding.UTF8.GetBytes(msg));
+            string msg;
+
+            Service.SendMsg(client, Riddle);
+
+            while (true)
+            {
+                msg = Service.RecieveMsg(client);
+
+                Service.SendMsg(client, msg.ToLower() == Answer ? "t" : "f");
+
+                await Console.Out.WriteLineAsync($"Sended message to {client.RemoteEndPoint}: {msg}");
+            }
         }
 
-        public static void ShowLog(Socket socket)
+        public static async Task ClientListenerAsync(Socket server)
         {
-            Console.WriteLine($"At {DateTime.Now} from {socket.RemoteEndPoint} recieved line: {RecieveMsg(socket)}");
+            Socket client;
+            while (true)
+            {
+                await Console.Out.WriteLineAsync("Waiting for client to connect...");
+
+                client = server.Accept();
+
+                await Console.Out.WriteLineAsync("Accepted client");
+
+                Task.Run(() => WorkWithClientAsync(client));
+
+            }
         }
 
-        public static string RecieveMsg(Socket socket)
-        {
-            var buffer = new byte[1024];
-
-            int size = socket.Receive(buffer);
-
-            return Encoding.UTF8.GetString(buffer, 0, size);
-        }
     }
 }
