@@ -11,8 +11,6 @@ namespace Lab1NetProg
         {
             Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.IP);
 
-            string msg;
-
             Console.WriteLine("Trying to connect to the server...");
             try
             {
@@ -25,23 +23,7 @@ namespace Lab1NetProg
 
                 Console.WriteLine(Service.RecieveMsg(client));
 
-                while (true)
-                {
-                    if (!ReadMsg(out msg))
-                    {
-                        break;
-                    }
-
-                    Service.SendMsg(client, msg);
-
-                    if (Service.RecieveMsg(client) == "t")
-                    {
-                        Console.WriteLine("Correct");
-                        break;
-                    }
-                    Console.WriteLine("Inccorect");
-
-                }
+                Loop(client);
             }
             catch (Exception ex)
             {
@@ -66,6 +48,30 @@ namespace Lab1NetProg
             }
 
 
+        }
+
+        public static bool CheckAns(Socket client)
+        {
+            if (Service.RecieveMsg(client) == "t")
+            {
+                Console.WriteLine("Correct");
+                return true;
+            }
+            Console.WriteLine("Inccorect");
+            return false;
+        }
+
+        public static void Loop(Socket client)
+        {
+            while (true)
+            {
+                if (!ReadMsg(out string msg)) break;
+
+                Service.SendMsg(client, msg);
+
+                if (CheckAns(client)) break;
+
+            }
         }
     }
 }
